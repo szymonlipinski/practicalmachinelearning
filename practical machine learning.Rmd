@@ -3,8 +3,8 @@ title: "Practical Machine Learning - Final Project"
 author: "Szymon Lipiński"
 date: "8/7/2019"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -45,6 +45,7 @@ library(randomForest)
 # Getting The Data
 
 ```{r}
+set.seed(12345)
 trainingURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 testingURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 
@@ -58,19 +59,20 @@ originalTesting <- read.csv(url(testingURL), na.strings=c("NA", "#DIV/0!", ""))
 The testing csv file contains more columns than the training one, so I need to remove some of them.
 
 ```{r}
-useTraining     <- originalTraining[,colSums(is.na(originalTraining))<nrow(originalTraining)]
-useFinalTesting <- originalTesting [,colSums(is.na(originalTesting)) <nrow(originalTesting)]
 
+colnames <- colnames(originalTraining)[!colSums(is.na(originalTraining)) > 0]
+colnames <- colnames[8: length(colnames)]
+useTraining <- originalTraining[colnames]
 
 trainingColNames <- colnames(useTraining)
-testingColNames <- colnames(useFinalTesting)
+testingColNames  <- colnames(originalTesting)
 
 commonColumns <- intersect(trainingColNames, testingColNames)
 
-useFinalTesting <- useFinalTesting[commonColumns]
-useTraining <- useTraining[append(commonColumns, c("classe"))]
+useFinalTesting <- originalTesting[commonColumns]
+useTraining     <- useTraining[append(commonColumns, c("classe"))]
 
-useFinalTesting <- rbind(useTraining[1, commonColumns] , useFinalTesting)
+useFinalTesting <- rbind(useTraining[1, commonColumns], useFinalTesting)
 useFinalTesting <- useFinalTesting[-1,]
 
 
@@ -79,8 +81,7 @@ useFinalTesting <- useFinalTesting[-1,]
 # Preparing The Training Sets
 
 ```{r}
-set.seed(1)
-inTrain <- createDataPartition(useTraining$classe, p=0.6, list=FALSE)
+inTrain <- createDataPartition(y=useTraining$classe, p=0.8, list=FALSE)
 training <- useTraining[inTrain, ]
 testing <- useTraining[-inTrain, ]
 ```
@@ -95,14 +96,13 @@ dim(testing)
 For training I'm using random forest method.
 
 ```{r}
-set.seed(12345)
 model <- randomForest(classe ~ ., data=training)
-predictions <- predict(model, testing, type="class")
+prediction <- predict(model, testing)
 ```
 
 
 ```{r}
-(cm <- confusionMatrix(predictions, testing$classe))
+confusionMatrix(testing$classe, prediction)
 ```
 
 The decision tree algorithm gave 100% accuracy on the training set.
@@ -110,5 +110,6 @@ The decision tree algorithm gave 100% accuracy on the training set.
 # Predicting Final Results
 
 ```{r}
-predict(model, useFinalTesting, type="class")
+predict(model, useFinalTesting)
 ```
+

@@ -398,7 +398,8 @@ library(randomForest)</code></pre>
 </div>
 <div id="getting-the-data" class="section level1">
 <h1>Getting The Data</h1>
-<pre class="r"><code>trainingURL &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
+<pre class="r"><code>set.seed(12345)
+trainingURL &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
 testingURL &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
 
 originalTraining &lt;- read.csv(url(trainingURL), na.strings=c(&quot;NA&quot;, &quot;#DIV/0!&quot;, &quot;&quot;))
@@ -407,78 +408,76 @@ originalTesting &lt;- read.csv(url(testingURL), na.strings=c(&quot;NA&quot;, &qu
 <div id="cleaning-the-data" class="section level1">
 <h1>Cleaning The Data</h1>
 <p>The testing csv file contains more columns than the training one, so I need to remove some of them.</p>
-<pre class="r"><code>useTraining     &lt;- originalTraining[,colSums(is.na(originalTraining))&lt;nrow(originalTraining)]
-useFinalTesting &lt;- originalTesting [,colSums(is.na(originalTesting)) &lt;nrow(originalTesting)]
-
+<pre class="r"><code>colnames &lt;- colnames(originalTraining)[!colSums(is.na(originalTraining)) &gt; 0]
+colnames &lt;- colnames[8: length(colnames)]
+useTraining &lt;- originalTraining[colnames]
 
 trainingColNames &lt;- colnames(useTraining)
-testingColNames &lt;- colnames(useFinalTesting)
+testingColNames  &lt;- colnames(originalTesting)
 
 commonColumns &lt;- intersect(trainingColNames, testingColNames)
 
-useFinalTesting &lt;- useFinalTesting[commonColumns]
-useTraining &lt;- useTraining[append(commonColumns, c(&quot;classe&quot;))]
+useFinalTesting &lt;- originalTesting[commonColumns]
+useTraining     &lt;- useTraining[append(commonColumns, c(&quot;classe&quot;))]
 
-useFinalTesting &lt;- rbind(useTraining[1, commonColumns] , useFinalTesting)
+useFinalTesting &lt;- rbind(useTraining[1, commonColumns], useFinalTesting)
 useFinalTesting &lt;- useFinalTesting[-1,]</code></pre>
 </div>
 <div id="preparing-the-training-sets" class="section level1">
 <h1>Preparing The Training Sets</h1>
-<pre class="r"><code>set.seed(1)
-inTrain &lt;- createDataPartition(useTraining$classe, p=0.6, list=FALSE)
+<pre class="r"><code>inTrain &lt;- createDataPartition(y=useTraining$classe, p=0.8, list=FALSE)
 training &lt;- useTraining[inTrain, ]
 testing &lt;- useTraining[-inTrain, ]</code></pre>
 <pre class="r"><code>dim(training)</code></pre>
-<pre><code>## [1] 11776    60</code></pre>
+<pre><code>## [1] 15699    53</code></pre>
 <pre class="r"><code>dim(testing)</code></pre>
-<pre><code>## [1] 7846   60</code></pre>
+<pre><code>## [1] 3923   53</code></pre>
 </div>
 <div id="training" class="section level1">
 <h1>Training</h1>
 <p>For training I’m using random forest method.</p>
-<pre class="r"><code>set.seed(12345)
-model &lt;- randomForest(classe ~ ., data=training)
-predictions &lt;- predict(model, testing, type=&quot;class&quot;)</code></pre>
-<pre class="r"><code>(cm &lt;- confusionMatrix(predictions, testing$classe))</code></pre>
+<pre class="r"><code>model &lt;- randomForest(classe ~ ., data=training)
+prediction &lt;- predict(model, testing)</code></pre>
+<pre class="r"><code>confusionMatrix(testing$classe, prediction)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 2232    0    0    0    0
-##          B    0 1518    0    0    0
-##          C    0    0 1368    0    0
-##          D    0    0    0 1286    0
-##          E    0    0    0    0 1442
+##          A 1116    0    0    0    0
+##          B    2  757    0    0    0
+##          C    0    2  681    1    0
+##          D    0    0    7  635    1
+##          E    0    0    0    0  721
 ## 
 ## Overall Statistics
-##                                      
-##                Accuracy : 1          
-##                  95% CI : (0.9995, 1)
-##     No Information Rate : 0.2845     
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
-##                                      
-##                   Kappa : 1          
-##                                      
-##  Mcnemar's Test P-Value : NA         
+##                                           
+##                Accuracy : 0.9967          
+##                  95% CI : (0.9943, 0.9982)
+##     No Information Rate : 0.285           
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9958          
+##                                           
+##  Mcnemar's Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2845   0.1935   0.1744   0.1639   0.1838
+## Sensitivity            0.9982   0.9974   0.9898   0.9984   0.9986
+## Specificity            1.0000   0.9994   0.9991   0.9976   1.0000
+## Pos Pred Value         1.0000   0.9974   0.9956   0.9876   1.0000
+## Neg Pred Value         0.9993   0.9994   0.9978   0.9997   0.9997
+## Prevalence             0.2850   0.1935   0.1754   0.1621   0.1840
+## Detection Rate         0.2845   0.1930   0.1736   0.1619   0.1838
 ## Detection Prevalence   0.2845   0.1935   0.1744   0.1639   0.1838
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
+## Balanced Accuracy      0.9991   0.9984   0.9944   0.9980   0.9993</code></pre>
 <p>The decision tree algorithm gave 100% accuracy on the training set.</p>
 </div>
 <div id="predicting-final-results" class="section level1">
 <h1>Predicting Final Results</h1>
-<pre class="r"><code>predict(model, useFinalTesting, type=&quot;class&quot;)</code></pre>
+<pre class="r"><code>predict(model, useFinalTesting)</code></pre>
 <pre><code>##  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 
-##  A  A  A  A  A  A  A  A  A  A  A  A  B  A  A  A  A  A  A  B 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
 ## Levels: A B C D E</code></pre>
 </div>
 
