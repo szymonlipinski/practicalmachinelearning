@@ -105,7 +105,12 @@ prediction <- predict(model, testing)
 confusionMatrix(testing$classe, prediction)
 ```
 
-The decision tree algorithm gave 100% accuracy on the training set.
+
+```{r}
+(error <- postResample(prediction, testing$classe))
+```
+
+The estimated accuracy is `r round(error[['Accuracy']] * 100, 2)`%, and the estimated out-of-sample error is `r round(100 - error[['Accuracy']] * 100, 2)`%.
 
 # Predicting Final Results
 

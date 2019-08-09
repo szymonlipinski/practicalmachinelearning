@@ -471,7 +471,10 @@ prediction &lt;- predict(model, testing)</code></pre>
 ## Detection Rate         0.2845   0.1930   0.1736   0.1619   0.1838
 ## Detection Prevalence   0.2845   0.1935   0.1744   0.1639   0.1838
 ## Balanced Accuracy      0.9991   0.9984   0.9944   0.9980   0.9993</code></pre>
-<p>The decision tree algorithm gave 100% accuracy on the training set.</p>
+<pre class="r"><code>(error &lt;- postResample(prediction, testing$classe))</code></pre>
+<pre><code>##  Accuracy     Kappa 
+## 0.9966862 0.9958081</code></pre>
+<p>The estimated accuracy is 99.67%, and the estimated out-of-sample error is 0.33%.</p>
 </div>
 <div id="predicting-final-results" class="section level1">
 <h1>Predicting Final Results</h1>
